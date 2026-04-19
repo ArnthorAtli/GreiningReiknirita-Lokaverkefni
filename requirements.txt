@@ -1,0 +1,5 @@
+pandas
+matplotlib
+plotly
+jupyter
+nbformat>=4.2.0
