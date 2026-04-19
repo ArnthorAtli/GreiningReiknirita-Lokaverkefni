@@ -45,3 +45,8 @@ def load_charging(charging_path):
     charging = df.groupby("nearest_node_id")["max_kw"].max().to_dict()
     print(f"Charging stations: {len(charging)}")
     return charging
+
+
+def nearest_node(node_info, lat, lon):
+    """Return the node id closest to the given (lat, lon) coordinate."""
+    return min(node_info, key=lambda n: (node_info[n]["lat"] - lat) ** 2 + (node_info[n]["lon"] - lon) ** 2)

@@ -64,7 +64,8 @@ def plot_network(node_info, edges_df, sample_frac=1.0):
     return fig, None
 
 
-def plot_charging(node_info, charging_dict, fig=None, output_dir="output"):
+def plot_charging(node_info, charging_dict, fig=None, output_dir="output",
+                  title=None, height=None):
     """Overlay charging stations on an existing figure (or create one)."""
     if fig is None:
         raise ValueError("pass fig returned by plot_network")
@@ -79,6 +80,14 @@ def plot_charging(node_info, charging_dict, fig=None, output_dir="output"):
         hoverinfo="text",
         name="Charging station",
     ))
+
+    layout_kwargs = {}
+    if title is not None:
+        layout_kwargs["title"] = title
+    if height is not None:
+        layout_kwargs["height"] = height
+    if layout_kwargs:
+        fig.update_layout(**layout_kwargs)
 
     _save(fig, output_dir, "iceland_network")
     fig.show()

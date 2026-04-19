@@ -389,6 +389,68 @@ def summarize_ev_path(path_states, graph, charging, battery_kwh,
     return segments, stops
 
 
+def dijkstra_set(graph, source, target, weight="length"):
+    """
+    Dijkstra returning a visited *set* (instead of a count) for visual comparison with A*.
+
+    Returns
+    -------
+    dist    : float      – shortest cost (inf if unreachable)
+    path    : list[int]  – node ids source → target
+    visited : set[int]   – all nodes popped from the priority queue
+    """
+    def edge_cost(data):
+        if weight == "time":
+            speed_mps = (data["maxspeed_kph"] or 50) * 1000 / 3600
+            return data["length"] / speed_mps
+        return data["length"]
+
+    dist_map = {source: 0.0}
+    prev = {}
+    visited = set()
+    pq = [(0.0, source)]
+
+    while pq:
+        cost, u = heapq.heappop(pq)
+        if u in visited:
+            continue
+        visited.add(u)
+        if u == target:
+            break
+        for v, data in graph.get(u, {}).items():
+            new_cost = cost + edge_cost(data)
+            if new_cost < dist_map.get(v, math.inf):
+                dist_map[v] = new_cost
+                prev[v] = u
+                heapq.heappush(pq, (new_cost, v))
+
+    if target not in dist_map:
+        return math.inf, [], visited
+
+    path = reconstruct_path(prev, source, target)
+    return dist_map[target], path, visited
+
+
+def extract_charge_stops(path_states):
+    """
+    Extract charging events from an EV path_states sequence.
+
+    Returns list of (node_id, w_before, w_after) for each charging session.
+    """
+    stops = []
+    i = 1
+    while i < len(path_states):
+        cur_node, cur_w = path_states[i]
+        prev_node, prev_w = path_states[i - 1]
+        if cur_node == prev_node and cur_w > prev_w:
+            w_start = prev_w
+            while i < len(path_states) - 1 and path_states[i + 1][0] == cur_node:
+                i += 1
+            stops.append((cur_node, w_start, path_states[i][1]))
+        i += 1
+    return stops
+
+
 def dijkstra_all(graph, source, weight="length"):
     """
     Single-source Dijkstra from source to all reachable nodes.
